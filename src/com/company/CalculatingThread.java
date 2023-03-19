@@ -1,19 +1,30 @@
 package com.company;
 
-public class CalculatingThread extends Thread {
-    long lowerBound, upperBound;
-    int threadNumber;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-    public CalculatingThread(long lowerBound, long upperBound, int threadNumber) {
-        this.lowerBound = lowerBound;
-        this.upperBound = upperBound;
-        this.threadNumber = threadNumber;
+public class CalculatingThread extends Thread {
+    ConcurrentLinkedQueue<SearchInterval> taskQueue;
+
+    public CalculatingThread(ConcurrentLinkedQueue<SearchInterval> taskQueue) {
+        this.taskQueue = taskQueue;
     }
 
     public void run() {
-        for (long i = upperBound; i >= lowerBound && i > 1; i--) {
-            if (Main.N % i == 0) {
-                Main.divisors.add(i);
+        while (true) {
+            SearchInterval interval = taskQueue.poll();
+            if (interval == null) {
+                if(taskQueue.isEmpty()){
+                    Main.threadPool.shutdown();
+                }
+                return;
+            }
+            for (long i = (interval.start == 0 ? 2 : interval.start) ; i <= interval.end; i++) {
+                Main.calcs++;
+                if (Main.N % i == 0 && Main.N != i && i > 2) {
+                    System.out.println("Divisor found: " + i);
+                    taskQueue.removeIf(searchInterval -> true);
+                    break;
+                }
             }
         }
     }
